@@ -7,30 +7,34 @@ public class Analizador {
 
     public static void main(String[] args) {
 
-        char invalidChar[] = {'”', '’', '=', '¿', '¡', '‘', ' '};
-        String invalidString =  "\"\'’=¿¡‘ ";
-        // System.out.println(invalidString);
         String superString = "";
 
         String input = "<img src><input type=\"__\" name=\"__\" id=\"_\" pattern=\"Expresion_regular\"/> <nani>";
+        System.out.println("String original: " + input);
 
-        // System.out.println(input);
-
+        // Divide el string por tags y conncatena el input.
         Pattern patternTags = Pattern.compile("[<>]");
         String[] tagsList = patternTags.split(input);
         for (String p : tagsList) {
-            if(p.matches("\\s*input\\s+(.)*")){
-                // System.out.println(p);
+            if (p.matches("\\s*input\\s+(.)*")) {
                 superString = superString.concat(p);
+                // Concatenaria todos los inputs en uno solo si es que hay multiples input por linea.
             }
         }
 
+        // Recupera los valores entre comillas
         Pattern p = Pattern.compile("\"([^\"]*)\"");
         Matcher m = p.matcher(superString);
         while (m.find()) {
-            System.out.println(m.group(1));
+            System.out.println(containsIllegals(m.group(1)));
         }
+    }
 
+    // Verifica que el string pasado por parametro no contenga caracteres invalidos.
+    public static boolean containsIllegals(String toExamine) {
+        Pattern pattern = Pattern.compile("[\\s\"\'’=¿¡‘]");
+        Matcher matcher = pattern.matcher(toExamine);
+        return matcher.find();
     }
 
     private static void tagSeparator() {
@@ -43,8 +47,7 @@ public class Analizador {
         Matcher m = p.matcher(stringToSearch);
 
         // print all the matches that we find
-        while (m.find())
-        {
+        while (m.find()) {
             System.out.println(m.group(1));
         }
     }
