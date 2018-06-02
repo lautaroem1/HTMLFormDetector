@@ -9,20 +9,75 @@ public class Analizador {
 
         String superString = "";
 
-        String input = "<img src><input type=\"__\" name=\"__\" id=\"_\" pattern=\"Expresion_regular\"/> <nani>";
-        System.out.println("String original: " + input);
+        List<String> inputFile = new ArrayList<>();
+        inputFile.add("<img src><input type=\\\"__\\\" name=\\\"__\\\" id=\\\"_\\\" pattern=\\\"Expresion");
+        inputFile.add("_regular\\\"> <input >");
 
-        // Divide el string por tags y conncatena el input.
-        Pattern patternTags = Pattern.compile("[<>]");
-        String[] tagsList = patternTags.split(input);
-        for (String p : tagsList) {
-            if (p.matches("\\s*input\\s+(.)*")) {
-                superString = superString.concat(p);
-                // Concatenaria todos los inputs en uno solo si es que hay multiples input por linea.
+        // Lsita de strings de salida del HTML.
+        List<String> outputfile = new ArrayList<>();
+
+        int lineSkipper = 0;
+        Pattern patternTags = Pattern.compile("[<]");
+
+        for (int i = 0; i < inputFile.size(); i++) {
+            if (lineSkipper > 0) {
+                lineSkipper--;
+            } else {
+                String input = inputFile.get(i);
+                System.out.println("Reading string: " + input);
+
+                // Tomamos el string analizado y lo separamos por tags.
+                String[] tagsList = patternTags.split(input);
+
+                for (String tagSection : tagsList) {
+
+                    System.out.println("Actual tag: " + tagSection);
+
+                    // Si el tag extraido es del formato de input entonces resulta de interes para analizar.
+                    if (tagSection.matches("\\s*input\\s+(.)*")) {
+
+                        System.out.println("Section " + tagSection + " has input!");
+                        superString = superString.concat(tagSection);
+                        // Lo concatenamos al superstring del formato input
+
+                        // Si no lo tiene, hay que analizar la siguiente linea hasta encontrarlo
+                        if (tagSection.matches("(.)*>(\\s)*$")) {
+                            // Si el string en cuestion tiene el simbolo de cierre al final, terminar.
+                            System.out.println("Input on single line!");
+                        } else {
+                            System.out.println("Multi line input, cheking next lines:");
+                            for (int j = i+1; j < inputFile.size(); j++) {
+                                lineSkipper++;
+                                superString = superString.concat(inputFile.get(j));
+
+                                System.out.println("Next line, looking for closing symbol: "+ inputFile.get(j));
+                                if (inputFile.get(j).contains(">")) {
+                                    System.out.println("Found closing symbol");
+                                    break;
+                                } else {
+                                    System.out.println("Closing symbol not found, cheking next line");
+                                    lineSkipper++;
+                                }
+                            }
+                        }
+                        // Concatenaria todos los inputs en uno solo si es que hay multiples input por linea.
+                        // Con un break solo seria el primero en la linea
+                        break;
+
+
+                    } else {
+                        System.out.println("Section " + tagSection + " is not an input!");
+                    }
+
+                    System.out.println("--------");
+                }
             }
         }
 
-        // Recupera los valores entre comillas
+
+    }
+
+    private static void quoteExtractor(String superString) {
         Pattern p = Pattern.compile("\"([^\"]*)\"");
         Matcher m = p.matcher(superString);
         while (m.find()) {
@@ -31,7 +86,7 @@ public class Analizador {
     }
 
     // Verifica que el string pasado por parametro no contenga caracteres invalidos.
-    public static boolean containsIllegals(String toExamine) {
+    private static boolean containsIllegals(String toExamine) {
         Pattern pattern = Pattern.compile("[\\s\"\'’=¿¡‘]");
         Matcher matcher = pattern.matcher(toExamine);
         return matcher.find();
