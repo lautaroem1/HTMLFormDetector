@@ -1,3 +1,5 @@
+package detector_errores_html;
+
 public class Linea {
      private String caracteres;
         private int largo;

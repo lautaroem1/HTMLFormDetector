@@ -1,3 +1,5 @@
+package detector_errores_html;
+
 public class Error {
     private int linea;
     private String comentario;
