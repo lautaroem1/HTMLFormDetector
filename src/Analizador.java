@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,32 +8,142 @@ public class Analizador {
 
     public static void main(String[] args) {
 
+        // groupExtractor();
         List<String> inputFile = new ArrayList<>();
-        inputFile.add("<img src><input type=\"__\" name=\"__\" id=\"_\" pattern=\"Expresi on");
+        inputFile.add("<img src><input type=\"__\" name=\"nombre\" id=\"_\" pattern=\"Expresi on");
         inputFile.add("_no_");
         inputFile.add("regular\"> <input >");
+        inputFile.add("<body> hola mundo </body>");
         inputFile.add("<head></head>");
+        inputFile.add("<img> <input % name=\"cuil\" pattern=\"algo que");
+        inputFile.add("no importa \">");
 
-        inputSplitter(fileToHTML(inputFile), inputFile);
+        List<String> formattedHTML = htmlFormatter(inputFile);
+
+        List<String> outputFile = new ArrayList<>();
+
+        for (int i = 0; i < formattedHTML.size(); i++) {
+            String s = formattedHTML.get(i);
+            System.out.println("Reading line: " + s);
+
+            String editedLine = lineAnalysis(s, i);
+            System.out.println("After analysis: " + editedLine);
+            outputFile.add(editedLine);
+        }
+    }
+
+    private static List<String> htmlFormatter(List<String> inputFile) {
+        List<String> formattedFile = new ArrayList<>();
+        String preparedSuperS = "";
+        for (String s : inputFile) {
+            preparedSuperS = preparedSuperS.concat(s).concat("\n");
+        }
+
+        preparedSuperS = preparedSuperS.replace("\n", "");
+        preparedSuperS = preparedSuperS.replace(">", ">\n");
+
+        String arr[] = preparedSuperS.split("\n");
+        Collections.addAll(formattedFile, arr);
+
+        return formattedFile;
+    }
+
+    private static String lineAnalysis(String line, int lineNumber) {
+        String editedLine;
+
+        Pattern inputPattern = Pattern.compile("<(\\s*input\\s+.*\\s*)>");
+        Matcher inputMatcher = inputPattern.matcher(line);
+
+
+        // Si encontro linea de tipo input analizar
+        if (inputMatcher.find()) {
+            // Analizar que entre comillas sea correcto.
+            if (quoteAnalysis(inputMatcher.group(1))) {
+            } else {
+                System.out.println("Error inside quotes in line: " + lineNumber);
+            }
+            // Extraemos la linea de input
+            editedLine = inputMatcher.group(0);
+
+            if (editedLine.contains("name=")) {
+                // Si la linea de input contiene name, debemos eliminar el pattern que tenia e insertar el correcto.
+                System.out.println("Found name attribute.");
+                System.out.println("Removing pattern...");
+                editedLine = patternRemover(editedLine);
+                System.out.println("Removed pattern result line: " + editedLine);
+                System.out.println("Adding pattern...");
+                editedLine = patternAdder(editedLine);
+                System.out.println("Added pattern result line: " + editedLine);
+            }
+        } else {
+            editedLine = line;
+        }
+        return editedLine;
+    }
+
+    private static String patternAdder(String line) {
+        return line.replace(">", patternExpression(nameValueExtractor(line)));
 
     }
 
+    private static String patternRemover(String line) {
+        // Si la linea cuenta con un pattern la elimina por completo.
+        String editedLine = line;
+        Pattern patPattern = Pattern.compile(".*(pattern=\".*\").*");
+        Matcher patMatcher = patPattern.matcher(line);
+        while (patMatcher.find()) {
+            editedLine = editedLine.replace(patMatcher.group(1), "");
+        }
+        return editedLine;
+    }
 
-    private static boolean inputCheker(String inputLine) {
-        char[] inputArray = inputLine.toCharArray();
-        if (quoteAnalysis(inputLine)) {
-            boolean inQuotes = false;
-            for (char c : inputArray) {
-                if (!inQuotes) {
-                }
+    private static String nameValueExtractor(String line) {
+        // Recupera el valor del atributo name
+        StringBuilder stringBuilder = new StringBuilder();
+
+        int startOfName = line.indexOf("name=") + 6;
+        int endOfName = 0;
+        for (int i = startOfName; i < line.length(); i++) {
+            if (line.charAt(i) == '"') {
+                endOfName = i;
+                break;
             }
         }
-        return true;
+        for (int i = startOfName; i < endOfName; i++) {
+            stringBuilder.append(line.charAt(i));
+        }
+        return stringBuilder.toString().toLowerCase();
     }
 
+    private static String patternExpression(String nameValue) {
+        System.out.println("Comparing with: " + nameValue);
+        switch (nameValue) {
+            case "nombre":
+                return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "apellido":
+                return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "dni":
+                return "pattern=\"<[0-9]{8}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "cuil":
+                return "pattern=\"<[0-99][0-9]{8}{0-9}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "correo_electronico":
+                return "pattern=\"<[a-zA-Z0-9]+([.][a-zA-Z0-9_-][+])*@[a-zA-Z]+([a-zA-Z][+])*.[a-zA-Z]+([.][a-zA-Z]){2-5}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "telefono":
+                return "pattern=\"<[0-9]{2-4}[0-9]{6-8}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "fecha_de_nacimiento":
+                return "pattern=\"< [0-31]/[0-12]/[1900-2018]/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
+            case "comentarios":
+                return "pattern=\"<[a-zA-Z0-9]*/>\"> <!--This is a comment. Comments are not displayed in the browser-->";
+            default:
+                return ">";
+        }
+    }
+
+    // Retorna true si todos los caracteres son validos
     private static boolean quoteAnalysis(String superString) {
         Pattern p = Pattern.compile("\"([^\"]*)\"");
         Matcher m = p.matcher(superString);
+
         while (m.find()) {
             if (containsIllegals(m.group(1))) {
                 return false;
@@ -46,149 +157,5 @@ public class Analizador {
         Pattern pattern = Pattern.compile("[\\s\"\'’=¿¡‘]");
         Matcher matcher = pattern.matcher(toExamine);
         return matcher.find();
-    }
-
-    private static String fileToHTML(List<String> inputFile) {
-        String superS = "";
-        for (String s : inputFile) {
-            superS = superS.concat(s).concat("\n");
-        }
-        return superS;
-    }
-
-    private static void inputSplitter(String htmlFile, List<String> inputFile) {
-        String prepHTMLFile;
-        String modifiedInputLine;
-
-        prepHTMLFile = htmlFile.replace("\n", "");
-        prepHTMLFile = prepHTMLFile.replace(">", ">\n");
-
-        Pattern p = Pattern.compile("<(\\s*input\\s+.*\\s*)>", Pattern.MULTILINE);
-        Matcher m = p.matcher(prepHTMLFile);
-
-        // print all the matches that we find
-        while (m.find())
-        {
-            System.out.println(m.group(1));
-            if (quoteAnalysis(m.group(1)) ){
-                System.out.println("Valid input format!");
-                // Hacer el remplazo del pattern.
-            }
-            else {
-                System.out.println("Invalid char found!");
-                // Deberia encontrar una forma de recuperar la linea donde esta el error.
-            }
-        }
-    }
-
-    private static void groupExtractor() {
-        String text = "[Username [rank] -> me] message";
-
-        String patron = "^\\[ ([\\w]+) \\[([\\w]+)] -> \\w+] (.*)$";
-        Pattern rx = Pattern.compile(patron);
-        Matcher m = rx.matcher(text);
-        if (m.find()) {
-            System.out.println("Match found:");
-            for (int i = 0; i <= m.groupCount(); i++) {
-                System.out.println("  Group " + i + ": " + m.group(i));
-            }
-        }
-    }
-
-    public static void extractorAfanado(){
-        String stringToSearch = "<p>Yada yada yada <code>foo</code> yada yada ...\n"
-                + "more here <code>bar</code> etc etc\n"
-                + "and still more <code>baz</code> and now the end</p>\n";
-
-        // the pattern we want to search for
-        Pattern p = Pattern.compile(" <code>(\\w+)</code> ", Pattern.MULTILINE);
-        Matcher m = p.matcher(stringToSearch);
-
-        // print all the matches that we find
-        while (m.find())
-        {
-            System.out.println(m.group(1));
-        }
-    }
-
-    private static void primeraVersion(List<String> inputFile){
-        String superString = "";
-
-        // Lista de strings de salida del HTML.
-        List<String> outputfile = new ArrayList<>();
-
-        int lineSkipper = 0;
-        Pattern pTagInit = Pattern.compile("[<]");
-
-        for (int i = 0; i < inputFile.size(); i++) {
-            System.out.println("Line value: " + i);
-            System.out.println("Lineskipper value: " + lineSkipper);
-
-            // Iteramos sobre el documento entero.
-            if (lineSkipper == 0) {
-
-                // Recuperamos la linea que estamos viendo
-                String input = inputFile.get(i);
-                System.out.println("Reading string number " + i + ": " + input);
-
-                // Tomamos la linea analizada y la separamos por tags.
-                String[] tagsList = pTagInit.split(input);
-
-                for (String tagSection : tagsList) {
-
-                    // Procedemos a analizar por tags
-                    System.out.println("    Actual tag: " + tagSection);
-
-                    // Si el tag extraido es del formato de input entonces resulta de interes para analizar.
-                    if (tagSection.matches("\\s*input\\s+(.)*")) {
-
-                        // Lo concatenamos al superstring del formato input
-                        System.out.println("    Tag \"" + tagSection + "\" is of input type!");
-                        superString = superString.concat(tagSection);
-
-                        if (tagSection.matches("(.)*>(\\s)*$")) {
-                            // Si el string en cuestion tiene el simbolo de cierre al final, terminar.
-                            System.out.println("    Input on single line!");
-                        } else {
-                            // Si no lo tiene, hay que analizar la siguiente linea hasta encontrarlo
-                            System.out.println("    Multi line input, cheking next lines:");
-                            int j = i + 1;
-                            while (j < inputFile.size()) {
-                                superString = superString.concat(inputFile.get(j));
-
-                                System.out.println("        Looking for closing symbol in next line: " + inputFile.get(j));
-                                if (inputFile.get(j).contains(">")) {
-                                    System.out.println("        Found closing symbol!");
-                                    j = inputFile.size();
-                                } else {
-                                    System.out.println("        Closing symbol not found, cheking next line");
-                                    lineSkipper++;
-                                }
-                                j++;
-                            }
-                        }
-                        System.out.println("    SuperString input: " + superString);
-                        System.out.println("    Cleaning SuperString input...");
-                        superString = superString.substring(0, superString.indexOf(">"));
-                        System.out.println("    SuperString input cleaned: " + superString);
-                        System.out.println("    Validating input ...");
-                        inputCheker(superString);
-                        System.out.println("    --------");
-                        superString = "";
-
-                        // Concatenaria todos los inputs en uno solo si es que hay multiples input por linea.
-                        // Con un break solo seria el primero en la linea
-                        break;
-                    } else {
-                        System.out.println("    Tag \"" + tagSection + "\" is not an input!");
-                    }
-                    System.out.println("    --------");
-                }
-            } else {
-                // Si tuvimos que skipear una linea, la ignoramos
-                lineSkipper--;
-            }
-        }
-        System.out.println("Reached end of file!");
     }
 }
