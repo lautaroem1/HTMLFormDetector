@@ -1,25 +1,27 @@
 package detector_errores_html;
 
-public class Linea {
-     private String caracteres;
-        private int largo;
-        Linea(String linea, int contador) {
-            caracteres = linea;
-            largo = contador;
-        }
+class Linea {
+    private String linea;
+    private int largo;
 
-        public String get_linea(){
-            return caracteres.toString();
-        }
+    Linea(String linea, int largo) {
+        this.linea = linea;
+        this.largo = largo;
+    }
 
-        public void set_linea(String l){
-            caracteres = l;
-        }
-        public int get_largo(){
-            return largo;
-        }
+    public String getLinea() {
+        return linea;
+    }
 
-        public void set_largo(int l){
-            largo = l;
-        }
+    public void setLinea(String linea) {
+        this.linea = linea;
+    }
+
+    public int getLargo() {
+        return largo;
+    }
+
+    public void setLargo(int largo) {
+        this.largo = largo;
+    }
 }

@@ -7,72 +7,58 @@ import java.util.regex.Pattern;
 
 public class AnalizadorFormularios {
 
-    public static void main(String[] args) {
-
-        List<Linea> inFile = initFile();
-        List<String> formattedFile = HTMLFormatter.formatt(inFile);
-
-        List<Error> errores_encontrados = validacion_formulario(formattedFile);
-
-    }
-
-    private static List<Error> validacion_formulario(List<String> formattedFile) {
+    static List<Error> validacion_formulario(List<Linea> formattedFile) {
 
         List<Error> errores_encontrados = new ArrayList<>();
         List<Linea> outFile = new ArrayList<>();
 
         for (int i = 0; i < formattedFile.size(); i++) {
-            String editedLine = analisisLinea(formattedFile.get(i), i, errores_encontrados);
+            String editedLine = analisisLinea(formattedFile.get(i).getLinea(), i, errores_encontrados);
             outFile.add(new Linea(editedLine, editedLine.length()));
         }
 
-        printFile(outFile);
+        HTMLPrinter.imprimirArchivo(outFile);
 
         return errores_encontrados;
     }
 
-    private static String analisisLinea(String line, int lineNumber, List<Error> errorList) {
+    private static String analisisLinea(String linea, int numero_linea, List<Error> errores_encontrados) {
         // Busca que la linea sea de tag input y verifica que cumpla los requisitos.
         // Retorna la linea modificada en caso de que haya que cambiar el pattern, o la misma si no es una sentencia input.
 
-        String editedLine;
+        String linea_editada;
         Pattern p = Pattern.compile("<(\\s*input\\s+.*\\s*)>");
-        Matcher m = p.matcher(line);
+        Matcher m = p.matcher(linea);
 
         // Si encontro linea de tipo input validacion_formulario
         if (m.find()) {
             // Analizar que entre comillas sea correcto.
-            if (!correctQuotes(m.group(1))) {
+            if (!correctoEntreComillas(m.group(1))) {
                 // Si hay error entre las comillas, generar error.
-                errorList.add(new Error(lineNumber, "Caracter ilegal entre comillas!"));
+                errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas!"));
+                // Es necesario el + 1 por como trabaja la tabla a diferencia de la lista.
             }
             // Extraemos la linea de input
-            editedLine = m.group(0);
-            if (editedLine.contains("name=")) {
-                // Si la linea de input contiene name, debemos eliminar el pattern que tenia e insertar el correcto.
-                // System.out.println("Found name attribute.");
-                // System.out.println("Removing pattern...");
-                editedLine = patternRemover(editedLine);
-                // System.out.println("Removed pattern result line: " + editedLine);
-                // System.out.println("Adding pattern...");
-                editedLine = patternAdder(editedLine);
-                // System.out.println("Added pattern result line: " + editedLine);
+            linea_editada = m.group(0);
+            if (linea_editada.contains("name=")) {
+                linea_editada = eliminarPattern(linea_editada);
+                linea_editada = agregarPattern(linea_editada);
             }
         }
 
         // De lo contrario dejar la linea como estaba.
         else {
-            editedLine = line;
+            linea_editada = linea;
         }
-        return editedLine;
+        return linea_editada;
     }
 
-    private static String patternAdder(String line) {
+    private static String agregarPattern(String line) {
         // Dada una linea remplaza el pattern que tenga por el correspondiente, o la deja igual en caso de que no se encuentre el pattern correcto.
-        return line.replace(">", patternExpression(nameValueExtractor(line)));
+        return line.replace(">", expresionesPattern(extraerValorName(line)));
     }
 
-    private static String patternRemover(String line) {
+    private static String eliminarPattern(String line) {
         // Si la linea cuenta con un pattern la elimina por completo, si no lo tiene, no hace nada.
         // Retorna la linea modificada
         String editedLine = line;
@@ -84,28 +70,27 @@ public class AnalizadorFormularios {
         return editedLine;
     }
 
-    private static String nameValueExtractor(String line) {
+    private static String extraerValorName(String linea) {
         // Recupera el valor del atributo name
         StringBuilder sb = new StringBuilder();
 
-        int startOfName = line.indexOf("name=") + 6;
-        int endOfName = 0;
-        for (int i = startOfName; i < line.length(); i++) {
-            if (line.charAt(i) == '"') {
-                endOfName = i;
+        int indiceInicio = linea.indexOf("name=") + 6;
+        int indiceFin = 0;
+        for (int i = indiceInicio; i < linea.length(); i++) {
+            if (linea.charAt(i) == '"') {
+                indiceFin = i;
                 break;
             }
         }
-        for (int i = startOfName; i < endOfName; i++) {
-            sb.append(line.charAt(i));
+        for (int i = indiceInicio; i < indiceFin; i++) {
+            sb.append(linea.charAt(i));
         }
         return sb.toString().toLowerCase();
     }
 
-    private static String patternExpression(String nameValue) {
+    private static String expresionesPattern(String valorName) {
         // Dado un valor de name retorna una pattern html apropiado con comentarios.
-        // System.out.println("Searching pattern for: " + nameValue);
-        switch (nameValue) {
+        switch (valorName) {
             case "nombre":
                 return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--Acepta caracteres desde la \"a\" hasta la \"z\" tanto en mayuscula como minusculas, con longitud de 2 a 30 caracteres-->";
             case "apellido":
@@ -128,12 +113,12 @@ public class AnalizadorFormularios {
     }
 
     // Retorna true si todos los caracteres son validos
-    private static boolean correctQuotes(String superString) {
+    private static boolean correctoEntreComillas(String linea) {
         Pattern p = Pattern.compile("\"([^\"]*)\"");
-        Matcher m = p.matcher(superString);
+        Matcher m = p.matcher(linea);
 
         while (m.find()) {
-            if (containsIllegals(m.group(1)) || m.group(1).length() == 0) {
+            if (contieneCharsIlegales(m.group(1)) || m.group(1).length() == 0) {
                 // Si contiene caracteres ilegales o es vacio, debe retornar falso.
                 return false;
             }
@@ -143,15 +128,15 @@ public class AnalizadorFormularios {
     }
 
     // Verifica que el string pasado por parametro no contenga caracteres invalidos.
-    private static boolean containsIllegals(String toExamine) {
+    private static boolean contieneCharsIlegales(String linea) {
         Pattern pattern = Pattern.compile("[\\s\"\'’=¿¡‘]");
-        Matcher matcher = pattern.matcher(toExamine);
+        Matcher matcher = pattern.matcher(linea);
         return matcher.find();
     }
 
     // Inicializa un archivo de prueba HTML.
-    private static List<Linea> initFile() {
-        List<Linea> lines = new ArrayList<>();
+    /* private static List<Linea> iniciarArchivo() {
+        List<Linea> lineas = new ArrayList<>();
 
         List<String> stringList = new ArrayList<>();
         stringList.add("<img src><input type=\"__\" name=\"nombre\" id=\"yourname\" pattern=\"Expresion");
@@ -163,17 +148,10 @@ public class AnalizadorFormularios {
         stringList.add("pattern\">");
 
         for (String s : stringList) {
-            lines.add(new Linea(s, s.length()));
+            lineas.add(new Linea(s, s.length()));
         }
 
-        return lines;
+        return lineas;
     }
-
-    // Crea un archivo HTML con las modificaciones ya hechas.
-    private static void printFile(List<Linea> outFile) {
-        System.out.println("Printing file...");
-        for (Linea l : outFile) {
-            System.out.println(l.get_linea());
-        }
-    }
+    */
 }

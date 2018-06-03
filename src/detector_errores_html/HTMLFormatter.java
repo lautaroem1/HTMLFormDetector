@@ -1,25 +1,29 @@
 package detector_errores_html;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class HTMLFormatter {
+class HTMLFormatter {
 
-    public static List<String> formatt(List<Linea> inputFile) {
+    static List<Linea> formatt(List<Linea> inputFile) {
         // Formatea una lista de sentencias HTML a una valida para analizar.
-        List<String> formattedFile = new ArrayList<>();
+
+        List<Linea> fFile = new ArrayList<>();
+
         String superS = "";
         for (Linea l : inputFile) {
-            superS = superS.concat(l.get_linea()).concat("\n");
+            superS = superS.concat(l.getLinea()).concat("\n");
         }
 
         superS = superS.replace("\n", "");
         superS = superS.replace(">", ">\n");
 
         String arr[] = superS.split("\n");
-        Collections.addAll(formattedFile, arr);
 
-        return formattedFile;
+        for (String s : arr) {
+            fFile.add(new Linea(s, s.length()));
+        }
+
+        return fFile;
     }
 }
