@@ -28,7 +28,9 @@ class HTMLPrinter {
         } finally {
             try {
                 // Tratamos de cerrar el fichero.
-                fw.close();
+                if (fw != null) {
+                    fw.close();
+                }
             } catch (Exception e) {
                 System.out.println("Error en fw.close");
                 e.printStackTrace();

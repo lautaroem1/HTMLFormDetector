@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AnalizadorFormularios {
+class AnalizadorFormularios {
 
     static List<Error> validacion_formulario(List<Linea> formattedFile) {
 
@@ -33,10 +33,17 @@ public class AnalizadorFormularios {
         // Si encontro linea de tipo input validacion_formulario
         if (m.find()) {
             // Analizar que entre comillas sea correcto.
-            if (!correctoEntreComillas(m.group(1))) {
-                // Si hay error entre las comillas, generar error.
-                errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas!"));
+            switch (correctoEntreComillas(m.group(1))) {
                 // Es necesario el + 1 por como trabaja la tabla a diferencia de la lista.
+                case 1:
+                    // Error de tipo 1
+                    errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas."));
+                    break;
+                case 2:
+                    errores_encontrados.add(new Error(numero_linea + 1, "Posible valor de atributo no encerrado en comillas."));
+                    break;
+                default:
+                    break;
             }
             // Extraemos la linea de input
             linea_editada = m.group(0);
@@ -113,18 +120,32 @@ public class AnalizadorFormularios {
     }
 
     // Retorna true si todos los caracteres son validos
-    private static boolean correctoEntreComillas(String linea) {
+    private static int correctoEntreComillas(String linea) {
         Pattern p = Pattern.compile("\"([^\"]*)\"");
         Matcher m = p.matcher(linea);
+
+        List<Integer> equalPositions = new ArrayList<>();
+        char[] charArray = linea.toCharArray();
+        for (int i = 0; i < charArray.length; i++) {
+            char c = charArray[i];
+            if (c == '=') {
+                equalPositions.add(i);
+            }
+        }
+        for (Integer i : equalPositions) {
+            if (linea.charAt(i + 1) != '\"') {
+                return 2;
+            }
+        }
 
         while (m.find()) {
             if (contieneCharsIlegales(m.group(1)) || m.group(1).length() == 0) {
                 // Si contiene caracteres ilegales o es vacio, debe retornar falso.
-                return false;
+                return 1;
             }
         }
-        return true;
-        // Si cumple las reglas indicadas, retornara verdadero.
+        return 0;
+        // Si cumple las reglas indicadas, retornara 0, el cual es codigo de valido.
     }
 
     // Verifica que el string pasado por parametro no contenga caracteres invalidos.
