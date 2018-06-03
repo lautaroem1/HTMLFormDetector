@@ -24,15 +24,21 @@ public class Analizador {
 
         for (int i = 0; i < formattedHTML.size(); i++) {
             String s = formattedHTML.get(i);
-            System.out.println("Reading line: " + s);
-
+            // System.out.println("Reading line: " + s);
             String editedLine = lineAnalysis(s, i);
-            System.out.println("After analysis: " + editedLine);
             outputFile.add(editedLine);
+        }
+
+        System.out.println();
+        System.out.println("Printing file...");
+        System.out.println();
+        for (String s : outputFile) {
+            System.out.println(s);
         }
     }
 
     private static List<String> htmlFormatter(List<String> inputFile) {
+        // Formatea una lista de sentencias HTML a una valida para analizar.
         List<String> formattedFile = new ArrayList<>();
         String preparedSuperS = "";
         for (String s : inputFile) {
@@ -49,33 +55,38 @@ public class Analizador {
     }
 
     private static String lineAnalysis(String line, int lineNumber) {
-        String editedLine;
+        // Analizador de lineas. Busca que la linea sea de tag input y que cumpla los requisitos.
+        // Retorna la linea modificada en caso de que haya que cambiar el pattern, o la misma si no es una sentencia input
 
+        String editedLine;
         Pattern inputPattern = Pattern.compile("<(\\s*input\\s+.*\\s*)>");
         Matcher inputMatcher = inputPattern.matcher(line);
 
-
         // Si encontro linea de tipo input analizar
         if (inputMatcher.find()) {
+
             // Analizar que entre comillas sea correcto.
-            if (quoteAnalysis(inputMatcher.group(1))) {
-            } else {
-                System.out.println("Error inside quotes in line: " + lineNumber);
+            if (!quoteAnalysis(inputMatcher.group(1))) {
+                // Si hay error entre las comillas, generar error.
+                System.out.println("Error found! Illegal character in quotes, in line: " + lineNumber);
             }
+
             // Extraemos la linea de input
             editedLine = inputMatcher.group(0);
 
             if (editedLine.contains("name=")) {
                 // Si la linea de input contiene name, debemos eliminar el pattern que tenia e insertar el correcto.
-                System.out.println("Found name attribute.");
-                System.out.println("Removing pattern...");
+                // System.out.println("Found name attribute.");
+                // System.out.println("Removing pattern...");
                 editedLine = patternRemover(editedLine);
-                System.out.println("Removed pattern result line: " + editedLine);
-                System.out.println("Adding pattern...");
+                // System.out.println("Removed pattern result line: " + editedLine);
+                // System.out.println("Adding pattern...");
                 editedLine = patternAdder(editedLine);
-                System.out.println("Added pattern result line: " + editedLine);
+                // System.out.println("Added pattern result line: " + editedLine);
             }
-        } else {
+        }
+        // De lo contrario, no analizar nada.
+        else {
             editedLine = line;
         }
         return editedLine;
@@ -87,7 +98,8 @@ public class Analizador {
     }
 
     private static String patternRemover(String line) {
-        // Si la linea cuenta con un pattern la elimina por completo.
+        // Si la linea cuenta con un pattern la elimina por completo, si no lo tiene, no hace nada.
+        // Retorna la linea modificada
         String editedLine = line;
         Pattern patPattern = Pattern.compile(".*(pattern=\".*\").*");
         Matcher patMatcher = patPattern.matcher(line);
@@ -116,7 +128,8 @@ public class Analizador {
     }
 
     private static String patternExpression(String nameValue) {
-        System.out.println("Comparing with: " + nameValue);
+        // Dado un valor de name retorna una pattern html apropiado con comentarios.
+        // System.out.println("Searching pattern for: " + nameValue);
         switch (nameValue) {
             case "nombre":
                 return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--This is a comment. Comments are not displayed in the browser-->";
