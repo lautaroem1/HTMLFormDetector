@@ -8,12 +8,12 @@ public class Analizador {
     public static void main(String[] args) {
 
         List<String> inputFile = new ArrayList<>();
-        inputFile.add("<img src><input type=\"__\" name=\"__\" id=\"_\" pattern=\"Expresion");
+        inputFile.add("<img src><input type=\"__\" name=\"__\" id=\"_\" pattern=\"Expresi on");
         inputFile.add("_no_");
         inputFile.add("regular\"> <input >");
         inputFile.add("<head></head>");
 
-        inputSplitter(fileToHTML(inputFile));
+        inputSplitter(fileToHTML(inputFile), inputFile);
 
     }
 
@@ -56,24 +56,27 @@ public class Analizador {
         return superS;
     }
 
-    private static void inputSplitter(String s) {
-        String preparedS;
+    private static void inputSplitter(String htmlFile, List<String> inputFile) {
+        String prepHTMLFile;
+        String modifiedInputLine;
 
-        preparedS = s.replace("\n", "");
-        preparedS = preparedS.replace(">", ">\n");
+        prepHTMLFile = htmlFile.replace("\n", "");
+        prepHTMLFile = prepHTMLFile.replace(">", ">\n");
 
         Pattern p = Pattern.compile("<(\\s*input\\s+.*\\s*)>", Pattern.MULTILINE);
-        Matcher m = p.matcher(preparedS);
+        Matcher m = p.matcher(prepHTMLFile);
 
         // print all the matches that we find
         while (m.find())
         {
             System.out.println(m.group(1));
-            if ( quoteAnalysis(m.group(1)) ){
+            if (quoteAnalysis(m.group(1)) ){
                 System.out.println("Valid input format!");
+                // Hacer el remplazo del pattern.
             }
             else {
                 System.out.println("Invalid char found!");
+                // Deberia encontrar una forma de recuperar la linea donde esta el error.
             }
         }
     }
