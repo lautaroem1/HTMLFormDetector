@@ -107,7 +107,7 @@ class AnalizadorFormularios {
             case "cuil":
                 return "pattern=\"<[0-99][0-9]{8}{0-9}/>\">  <!--Acepta el siguiente formato: un numero entero de 0 a 99, concatenado con entero de 8 digitos, concatenado con un digito de 0 a 9-->";
             case "correo_electronico":
-                return "pattern=\"<[a-zA-Z0-9]+([.][a-zA-Z0-9_-][+])*@[a-zA-Z]+([a-zA-Z][+])*.[a-zA-Z]+([.][a-zA-Z]){2-5}/>\">  <!--Formato de correo electronico-->";
+                return "pattern=\"<[a-zA-Z0-9]+([.][a-zA-Z0-9_-][+])*@[a-zA-Z]+([a-zA-Z][+])*.[a-zA-Z]+([.][a-zA-Z]){2-5}/>\">  <!--Acepta el siguiente formato: secuenca de al menos un caracter continuado por el simbolo @, continuado por una cadena de caracteres terminadas con un ., finalizando con una secuencia de 2 a 5 caracteres -->";
             case "telefono":
                 return "pattern=\"<[0-9]{2-4}[0-9]{6-8}/>\">  <!--Acepta el siguiente formato: un numero entero de 2 a 4 digitos, concatenado con otro entero de 6 a 8 digitos.-->";
             case "fecha_de_nacimiento":
