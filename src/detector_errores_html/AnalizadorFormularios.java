@@ -121,22 +121,8 @@ class AnalizadorFormularios {
 
     // Retorna true si todos los caracteres son validos
     private static int correctoEntreComillas(String linea) {
-        Pattern p = Pattern.compile("\"([^\"]*)\"");
+        Pattern p = Pattern.compile("\\s*\"([^\"]*)\"");
         Matcher m = p.matcher(linea);
-
-        List<Integer> equalPositions = new ArrayList<>();
-        char[] charArray = linea.toCharArray();
-        for (int i = 0; i < charArray.length; i++) {
-            char c = charArray[i];
-            if (c == '=') {
-                equalPositions.add(i);
-            }
-        }
-        for (Integer i : equalPositions) {
-            if (linea.charAt(i + 1) != '\"') {
-                return 2;
-            }
-        }
 
         while (m.find()) {
             if (contieneCharsIlegales(m.group(1)) || m.group(1).length() == 0) {
