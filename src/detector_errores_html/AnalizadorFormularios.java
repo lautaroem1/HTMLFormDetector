@@ -1,7 +1,5 @@
 package detector_errores_html;
 
-import com.sun.deploy.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -40,13 +38,13 @@ class AnalizadorFormularios {
             switch (correctoEntreComillas(m.group(1))) {
                 // Es necesario el + 1 por como trabaja la tabla a diferencia de la lista.
                 case 1:
-                    errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas o posible atributo sin encerrar."));
+                    errores_encontrados.add(new Error(numero_linea + 1, "Valor de atributo no iniciado con comillas o simbolo = invalido."));
                     break;
                 case 2:
-                    errores_encontrados.add(new Error(numero_linea + 1, "Atributo de longitud 0."));
+                    errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas o posible atributo sin encerrar."));
                     break;
                 case 3:
-                    errores_encontrados.add(new Error(numero_linea + 1, "Valor de atributo no iniciado con comillas."));
+                    errores_encontrados.add(new Error(numero_linea + 1, "Atributo de longitud 0."));
                     break;
                 case 4:
                     errores_encontrados.add(new Error(numero_linea + 1, "Comillas sin cerrar."));
@@ -99,7 +97,7 @@ class AnalizadorFormularios {
         } else return "";
     }
 
-    private static boolean esNameConocido(String valorName){
+    private static boolean esNameConocido(String valorName) {
         return !(expresionesPattern(valorName).equals(DEFAULT_PATTERN_RETURN));
     }
 
@@ -129,24 +127,25 @@ class AnalizadorFormularios {
 
     // Retorna true si todos los caracteres son validos
     private static int correctoEntreComillas(String linea) {
-        Pattern p = Pattern.compile("\\s*\"([^\"]*)\"");
+        Pattern p = Pattern.compile("=\\s*[^\"\\s]");
         Matcher m = p.matcher(linea);
+
+        if (m.find()) {
+            // Si existe algun simbolo "=" no seguido por espacios o comillas retorna 1.
+            return 1;
+        }
+
+        p = Pattern.compile("\\s*\"([^\"]*)\"");
+        m = p.matcher(linea);
 
         while (m.find()) {
             if (contieneCharsIlegales(m.group(1))) {
-                // Si contiene chars ilegales retorna 1.
-                return 1;
-            } else if (m.group(1).length() == 0) {
-                // Si es de longitud vacia retorna 2.
+                // Si contiene chars ilegales retorna 2.
                 return 2;
+            } else if (m.group(1).length() == 0) {
+                // Si es de longitud vacia retorna 3.
+                return 3;
             }
-        }
-
-        p = Pattern.compile("=\\s*[^\"\\s]");
-        m = p.matcher(linea);
-        if (m.find()) {
-            // Si existe algun igual no seguido por espacios o comillas retorna 3.
-            return 3;
         }
 
         if (linea.chars().filter(ch -> ch == '"').count() % 2 != 0) {
