@@ -37,17 +37,20 @@ class AnalizadorFormularios {
                 // Es necesario el + 1 por como trabaja la tabla a diferencia de la lista.
                 case 1:
                     // Error de tipo 1
-                    errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas."));
+                    errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas o posible atributo sin encerrar."));
                     break;
                 case 2:
-                    errores_encontrados.add(new Error(numero_linea + 1, "Posible valor de atributo no encerrado en comillas."));
+                    errores_encontrados.add(new Error(numero_linea + 1, "Atributo de longitud 0."));
                     break;
+                case 3:
+                    errores_encontrados.add(new Error(numero_linea + 1, "Valor de atributo no iniciado con comillas."));
                 default:
                     break;
             }
             // Extraemos la linea de input
             linea_editada = m.group(0);
-            if (linea_editada.contains("name=")) {
+            if (!extraerValorName(linea_editada).equals("")) {
+                // Si la linea tiene un name conocido reemplazar por el correspondiente
                 linea_editada = eliminarPattern(linea_editada);
                 linea_editada = agregarPattern(linea_editada);
             }
@@ -65,12 +68,12 @@ class AnalizadorFormularios {
         return line.replace(">", expresionesPattern(extraerValorName(line)));
     }
 
-    private static String eliminarPattern(String line) {
+    private static String eliminarPattern(String linea) {
         // Si la linea cuenta con un pattern la elimina por completo, si no lo tiene, no hace nada.
         // Retorna la linea modificada
-        String editedLine = line;
-        Pattern p = Pattern.compile(".*(pattern=\".*\").*");
-        Matcher m = p.matcher(line);
+        String editedLine = linea;
+        Pattern p = Pattern.compile("(pattern=\\s*\"[^\"]*\")");
+        Matcher m = p.matcher(linea);
         while (m.find()) {
             editedLine = editedLine.replace(m.group(1), "");
         }
@@ -79,41 +82,33 @@ class AnalizadorFormularios {
 
     private static String extraerValorName(String linea) {
         // Recupera el valor del atributo name
-        StringBuilder sb = new StringBuilder();
 
-        int indiceInicio = linea.indexOf("name=") + 6;
-        int indiceFin = 0;
-        for (int i = indiceInicio; i < linea.length(); i++) {
-            if (linea.charAt(i) == '"') {
-                indiceFin = i;
-                break;
-            }
-        }
-        for (int i = indiceInicio; i < indiceFin; i++) {
-            sb.append(linea.charAt(i));
-        }
-        return sb.toString().toLowerCase();
+        Pattern p = Pattern.compile("name=\\s*\"([^\"]*)");
+        Matcher m = p.matcher(linea);
+        if (m.find()) {
+            return m.group(1).toLowerCase();
+        } else return "";
     }
 
     private static String expresionesPattern(String valorName) {
         // Dado un valor de name retorna una pattern html apropiado con comentarios.
         switch (valorName) {
             case "nombre":
-                return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--Acepta caracteres desde la \"a\" hasta la \"z\" tanto en mayuscula como minusculas, con longitud de 2 a 30 caracteres-->";
+                return " pattern=\"[a-zA-Z]{2-30}\">  <!--Acepta caracteres desde la \"a\" hasta la \"z\" tanto en mayuscula como minusculas, con longitud de 2 a 30 caracteres-->";
             case "apellido":
-                return "pattern=\"<[a-zA-Z]{2-30}/>\">  <!--Acepta caracteres desde la \"a\" hasta la \"z\" tanto en mayuscula como minusculas, con longitud de 2 a 30 caracteres-->";
+                return " pattern=\"[a-zA-Z]{2-30}\">  <!--Acepta caracteres desde la \"a\" hasta la \"z\" tanto en mayuscula como minusculas, con longitud de 2 a 30 caracteres-->";
             case "dni":
-                return "pattern=\"<[0-9]{8}/>\">  <!--Acepta solo numeros enteros de longitud 8-->";
+                return " pattern=\"[0-9]{8}\">  <!--Acepta solo numeros enteros de longitud 8-->";
             case "cuil":
-                return "pattern=\"<[0-99][0-9]{8}{0-9}/>\">  <!--Acepta el siguiente formato: un numero entero de 0 a 99, concatenado con entero de 8 digitos, concatenado con un digito de 0 a 9-->";
+                return " pattern=\"[0-99][0-9]{8}{0-9}\">  <!--Acepta el siguiente formato: un numero entero de 0 a 99, concatenado con entero de 8 digitos, concatenado con un digito de 0 a 9-->";
             case "correo_electronico":
-                return "pattern=\"<[a-zA-Z0-9]+([.][a-zA-Z0-9_-][+])*@[a-zA-Z]+([a-zA-Z][+])*.[a-zA-Z]+([.][a-zA-Z]){2-5}/>\">  <!--Acepta el siguiente formato: secuenca de al menos un caracter continuado por el simbolo @, continuado por una cadena de caracteres terminadas con un ., finalizando con una secuencia de 2 a 5 caracteres -->";
+                return " pattern=\"[a-zA-Z0-9]+([.][a-zA-Z0-9_-][+])*@[a-zA-Z]+([a-zA-Z][+])*.[a-zA-Z]+([.][a-zA-Z]){2-5}\">  <!--Acepta el siguiente formato: secuenca de al menos un caracter continuado por el simbolo @, continuado por una cadena de caracteres terminadas con un ., finalizando con una secuencia de 2 a 5 caracteres -->";
             case "telefono":
-                return "pattern=\"<[0-9]{2-4}[0-9]{6-8}/>\">  <!--Acepta el siguiente formato: un numero entero de 2 a 4 digitos, concatenado con otro entero de 6 a 8 digitos.-->";
+                return " pattern=\"[0-9]{2-4}[0-9]{6-8}\">  <!--Acepta el siguiente formato: un numero entero de 2 a 4 digitos, concatenado con otro entero de 6 a 8 digitos.-->";
             case "fecha_de_nacimiento":
-                return "pattern=\"< [0-31]/[0-12]/[1900-2018]/>\">  <!--Acepta el siguiente formato: un numero entero entre 0 y 31, concatenado con \"/\", concatenado con un numero entero de 0 a 12, concatenado con \"/\", concatenado con un numero entero entre 1900 y 2018-->";
+                return " pattern=\"[0-31]/[0-12]/[1900-2018]\">  <!--Acepta el siguiente formato: un numero entero entre 0 y 31, concatenado con \"/\", concatenado con un numero entero de 0 a 12, concatenado con \"/\", concatenado con un numero entero entre 1900 y 2018-->";
             case "comentarios":
-                return "pattern=\"<[a-zA-Z0-9]*/>\"> <!--Acepta cualquier combinacion de carateres del abecedario junto a digitos de 0 al 9-->";
+                return " pattern=\"[a-zA-Z0-9]*\"> <!--Acepta cualquier combinacion de carateres del abecedario junto a digitos de 0 al 9-->";
             default:
                 return ">";
         }
@@ -125,10 +120,19 @@ class AnalizadorFormularios {
         Matcher m = p.matcher(linea);
 
         while (m.find()) {
-            if (contieneCharsIlegales(m.group(1)) || m.group(1).length() == 0) {
-                // Si contiene caracteres ilegales o es vacio, debe retornar falso.
+            if (contieneCharsIlegales(m.group(1))) {
+                // Si contiene chars ilegales retorna 1.
                 return 1;
+            } else if (m.group(1).length() == 0) {
+                // Si es de longitud vacia retorna 2.
+                return 2;
             }
+        }
+
+        p = Pattern.compile("=\\s*[^\"\\s]");
+        m = p.matcher(linea);
+        if (m.find()) {
+            return 3;
         }
         return 0;
         // Si cumple las reglas indicadas, retornara 0, el cual es codigo de valido.

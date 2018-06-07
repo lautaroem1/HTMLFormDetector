@@ -16,6 +16,7 @@ class HTMLFormatter {
         }
 
         superS = superS.replace("\n", "");
+        superS = superS.replace("<", "\n<");
         superS = superS.replace(">", ">\n");
 
         String arr[] = superS.split("\n");
