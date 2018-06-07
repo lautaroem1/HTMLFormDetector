@@ -36,7 +36,6 @@ class AnalizadorFormularios {
             switch (correctoEntreComillas(m.group(1))) {
                 // Es necesario el + 1 por como trabaja la tabla a diferencia de la lista.
                 case 1:
-                    // Error de tipo 1
                     errores_encontrados.add(new Error(numero_linea + 1, "Caracter ilegal entre comillas o posible atributo sin encerrar."));
                     break;
                 case 2:
@@ -44,6 +43,10 @@ class AnalizadorFormularios {
                     break;
                 case 3:
                     errores_encontrados.add(new Error(numero_linea + 1, "Valor de atributo no iniciado con comillas."));
+                    break;
+                case 4:
+                    errores_encontrados.add(new Error(numero_linea + 1, "Comillas sin cerrar."));
+                    break;
                 default:
                     break;
             }
@@ -132,8 +135,15 @@ class AnalizadorFormularios {
         p = Pattern.compile("=\\s*[^\"\\s]");
         m = p.matcher(linea);
         if (m.find()) {
+            // Si existe algun igual no seguido por espacios o comillas retorna 3.
             return 3;
         }
+
+        if (linea.chars().filter(ch -> ch == '"').count() % 2 != 0) {
+            // Si la cantidad de comillas no es par significa que alguna no esta cerrada. Retorna 4.
+            return 4;
+        }
+
         return 0;
         // Si cumple las reglas indicadas, retornara 0, el cual es codigo de valido.
     }
