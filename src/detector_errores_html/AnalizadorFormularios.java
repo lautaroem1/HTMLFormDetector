@@ -1,11 +1,15 @@
 package detector_errores_html;
 
+import com.sun.deploy.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class AnalizadorFormularios {
+
+    private static final String DEFAULT_PATTERN_RETURN = ">";
 
     static List<Error> validacion_formulario(List<Linea> formattedFile) {
 
@@ -52,7 +56,8 @@ class AnalizadorFormularios {
             }
             // Extraemos la linea de input
             linea_editada = m.group(0);
-            if (!extraerValorName(linea_editada).equals("")) {
+
+            if (esNameConocido(linea_editada)) {
                 // Si la linea tiene un name conocido reemplazar por el correspondiente
                 linea_editada = eliminarPattern(linea_editada);
                 linea_editada = agregarPattern(linea_editada);
@@ -63,6 +68,7 @@ class AnalizadorFormularios {
         else {
             linea_editada = linea;
         }
+
         return linea_editada;
     }
 
@@ -93,6 +99,10 @@ class AnalizadorFormularios {
         } else return "";
     }
 
+    private static boolean esNameConocido(String valorName){
+        return !(expresionesPattern(valorName).equals(DEFAULT_PATTERN_RETURN));
+    }
+
     private static String expresionesPattern(String valorName) {
         // Dado un valor de name retorna una pattern html apropiado con comentarios.
         switch (valorName) {
@@ -113,7 +123,7 @@ class AnalizadorFormularios {
             case "comentarios":
                 return " pattern=\"[a-zA-Z0-9]*\"> <!--Acepta cualquier combinacion de carateres del abecedario junto a digitos de 0 al 9-->";
             default:
-                return ">";
+                return DEFAULT_PATTERN_RETURN;
         }
     }
 
